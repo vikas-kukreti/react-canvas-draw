@@ -1,0 +1,84 @@
+* {
+  padding: 0;
+  margin: 0;
+  outline: none;
+  appearance: none;
+  border: none;
+  color: inherit;
+  -webkit-touch-callout: none;
+}
+
+body {
+  background-color: #c9c9c9;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.canvas-container {
+  position: relative;
+  width: min-content;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+  align-self: center;
+  margin: auto;
+  background-color: white;
+}
+
+.canvas-container canvas {
+  display: block;
+}
+
+.canvas-container canvas.moving {
+    cursor: grab;
+}
+
+.canvas-container canvas.moving:active {
+    cursor: grabbing;
+}
+
+.canvas-container .menu {
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  left: 10px;
+  top: 10px;
+  border-radius: 5px;
+  background-color: rgba(231, 231, 231, 0.9);
+  position: absolute;
+}
+
+.canvas-container .menu[aria-disabled="true"] {
+  opacity: 0.25;
+  pointer-events: none;
+}
+.canvas-container .menu .preview {
+  background-color: white;
+}
+.canvas-container .menu button {
+  background: none;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.canvas-container .menu button[aria-pressed="true"] {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.canvas-container .menu button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.canvas-container .menu button:disabled:hover {
+    background: none;
+}
+
+.canvas-container .menu button:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
