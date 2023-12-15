@@ -32,11 +32,11 @@ body {
 }
 
 .canvas-container canvas.moving {
-    cursor: grab;
+  cursor: grab;
 }
 
 .canvas-container canvas.moving:active {
-    cursor: grabbing;
+  cursor: grabbing;
 }
 
 .canvas-container .menu {
@@ -57,8 +57,18 @@ body {
   pointer-events: none;
 }
 .canvas-container .menu .preview {
+  position: relative;
+  width: 50px;
+  height: 50px;
   background-color: white;
+  outline: 1px solid #dadada;
 }
+
+.canvas-container .menu .preview .active {
+  position: absolute;
+  background-color: #b9b9b9;
+}
+
 .canvas-container .menu button {
   background: none;
   padding: 10px;
@@ -67,7 +77,7 @@ body {
 }
 
 .canvas-container .menu button[aria-pressed="true"] {
-    background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.5);
 }
 
 .canvas-container .menu button:disabled {
@@ -76,7 +86,7 @@ body {
 }
 
 .canvas-container .menu button:disabled:hover {
-    background: none;
+  background: none;
 }
 
 .canvas-container .menu button:hover {
