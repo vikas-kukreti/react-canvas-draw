@@ -5,4 +5,4 @@ export const MODES = {
   CIRCLE: 3,
 };
 
-export const PAN_LIMIT = 4000;
+export const PAN_LIMIT = 2000;

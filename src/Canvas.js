@@ -8,10 +8,14 @@ import move from "./assets/move.svg";
 let lastPath = [];
 
 const Canvas = ({ settings, ...rest }) => {
+  const width = Math.min(rest.width, PAN_LIMIT);
+  const height = Math.min(rest.height, PAN_LIMIT);
   const [drawing, setDrawing] = useState(false);
   const [, render] = useReducer((prev) => !prev, false);
   const canvas = useRef(null);
   const context = useRef(null);
+  const draw = useRef(false);
+  const coords = useRef([0, 0]);
   const history = useRef([]);
   const redoHistory = useRef([]);
   const moving = useRef(false);
@@ -23,13 +27,14 @@ const Canvas = ({ settings, ...rest }) => {
 
   const onPointerDown = (e) => {
     prevent(e);
-    settings.current.coords = [e.clientX, e.clientY];
+    coords.current = [e.clientX, e.clientY];
     if (settings.current.mode === MODES.PAN) {
       moving.current = true;
       return;
     }
     setDrawing(true);
-    settings.current.draw = true;
+    draw.current = true;
+    getContext(settings.current);
     lastPath = [];
   };
 
@@ -40,34 +45,38 @@ const Canvas = ({ settings, ...rest }) => {
       return;
     }
     setDrawing(false);
-    settings.current.draw = false;
-    history.current.push([settings.current.mode, lastPath]);
+    draw.current = false;
+    history.current.push({
+      ...settings.current,
+      path: lastPath,
+    });
     redoHistory.current = [];
     lastPath = [];
   };
 
   const onCanvasMove = (e) => {
-    const [x1, y1] = settings.current.coords;
+    const [x1, y1] = coords.current;
     const { clientX: x2, clientY: y2 } = e;
     let dx = x2 - x1;
     let dy = y2 - y1;
     const ctx = getContext();
     const { e: tdx, f: tdy } = ctx.getTransform();
-    const ntdx = Math.min(Math.max(0, tdx + dx), PAN_LIMIT - rest.width);
-    const ntdy = Math.min(Math.max(0, tdy + dy), PAN_LIMIT - rest.height);
+    const ntdx = Math.min(Math.max(-(PAN_LIMIT - width), tdx + dx), 0);
+    const ntdy = Math.min(Math.max(-(PAN_LIMIT - height), tdy + dy), 0);
+    console.log(ntdx, ntdy);
     ctx.setTransform(1, 0, 0, 1, ntdx, ntdy);
     drawCanvas();
-    settings.current.coords = [x2, y2];
+    coords.current = [x2, y2];
   };
   const onPointerMove = (e) => {
     prevent(e);
     if (moving.current) return onCanvasMove(e);
-    if (!settings.current.draw) return;
+    if (!draw.current) return;
     const point = getPoints(e);
-    draw(settings.current.mode, point);
+    drawModes(settings.current.mode, point);
   };
 
-  const draw = (mode, point) => {
+  const drawModes = (mode, point) => {
     switch (mode) {
       case MODES.LINE:
         drawLine(point);
@@ -80,21 +89,21 @@ const Canvas = ({ settings, ...rest }) => {
     }
   };
 
-  const getContext = () => {
+  const getContext = (config) => {
     if (!context.current) {
       context.current = canvas.current.getContext("2d");
     }
-    const ctx = context.current;
-    ctx.fillStyle = settings.current.color;
-    ctx.lineWidth = settings.current.stroke;
-    ctx.lineCap = "round";
-    return ctx;
+    if (config) {
+      context.current.fillStyle = config.color;
+      context.current.lineWidth = config.stroke;
+      context.current.lineCap = "round";
+    }
+    return context.current;
   };
 
   const getPoints = (e) => {
     const ctx = getContext();
     const { e: dx, f: dy } = ctx.getTransform();
-    console.log(dx, dy);
     const rect = canvas.current.getBoundingClientRect();
     return [e.clientX - rect.x - dx, e.clientY - rect.y - dy];
   };
@@ -123,10 +132,11 @@ const Canvas = ({ settings, ...rest }) => {
   const drawCanvas = (e) => {
     render();
     clearCanvas();
-    history.current.forEach(([mode, path]) => {
+    history.current.forEach((item) => {
       lastPath = [];
-      path.forEach((p) => {
-        draw(mode, p);
+      getContext(item);
+      item.path.forEach((point) => {
+        drawModes(item.mode, point);
       });
       lastPath = [];
     });
@@ -158,34 +168,30 @@ const Canvas = ({ settings, ...rest }) => {
   useEffect(() => {
     document.addEventListener("pointerup", onPointerUp);
     document.addEventListener("pointermove", onPointerMove);
-    getContext().setTransform(1, 0, 0, 1, PAN_LIMIT / 2, PAN_LIMIT / 2);
-    console.log(getContext());
+    console.log((PAN_LIMIT - width) / 2);
+    getContext().setTransform(
+      1,
+      0,
+      0,
+      1,
+      -(PAN_LIMIT - width) / 2,
+      -(PAN_LIMIT - height) / 2
+    );
+    drawCanvas();
     return () => {
       document.removeEventListener("pointerup", onPointerUp);
       document.removeEventListener("pointermove", onPointerMove);
     };
-  }, [canvas.current]);
+  }, [width, height]);
 
-  const getFullCanvasImage = () => {
-    const newCanvas = document.createElement("canvas");
-    newCanvas.width = 200;
-    newCanvas.height = 200;
-    if (canvas.current) {
-      const destCtx = newCanvas.getContext("2d");
-      const ctx = getContext();
-      ctx.save();
-      ctx.setTransform(0.01, 0, 0, 0.01, 0, 0);
-      destCtx.drawImage(canvas.current, 0, 0);
-      ctx.restore()
-    }
-    return newCanvas.toDataURL("image/png");
-  };
+  const getFullCanvasImage = () => {};
 
   return (
     <>
       <canvas
         ref={canvas}
-        {...rest}
+        width={width}
+        height={height}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         className={settings.current.mode === MODES.PAN ? "moving" : "drawing"}
