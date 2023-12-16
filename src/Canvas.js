@@ -117,7 +117,7 @@ const Canvas = ({ settings, ...rest }) => {
     }
     if (!ctx) ctx = context.current;
     if (config) {
-      ctx.fillStyle = config.color;
+      ctx.strokeStyle = config.color;
       ctx.lineWidth = config.stroke;
       ctx.lineCap = "round";
     }
@@ -205,6 +205,10 @@ const Canvas = ({ settings, ...rest }) => {
     };
   }, [width, height]);
 
+  const changeColor = (e) => {
+    settings.current.color = e.target.value;
+  };
+
   return (
     <>
       <canvas
@@ -242,6 +246,14 @@ const Canvas = ({ settings, ...rest }) => {
           disabled={redoHistory.current.length === 0}
         >
           <img src={redo} alt="redo" title="red" />
+        </button>
+        <button className="color">
+          <input
+            type="color"
+            title="change color"
+            defaultValue={settings.current.color}
+            onChange={changeColor}
+          />
         </button>
       </div>
     </>
