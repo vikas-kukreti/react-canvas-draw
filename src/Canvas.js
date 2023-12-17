@@ -1,9 +1,11 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import { MODES, PAN_LIMIT } from "./constants";
 
-import undo from "./assets/undo.svg";
-import redo from "./assets/redo.svg";
-import move from "./assets/move.svg";
+import undoIcon from "./assets/undo.svg";
+import redoIcon from "./assets/redo.svg";
+import moveIcon from "./assets/move.svg";
+import exportIcon from "./assets/export.svg";
+import importIcon from "./assets/import.svg";
 
 let lastPath = [];
 
@@ -20,6 +22,7 @@ const Canvas = ({ settings, ...rest }) => {
   const history = useRef([]);
   const redoHistory = useRef([]);
   const moving = useRef(false);
+  const importInput = useRef(null);
 
   const prevent = (e) => {
     e.preventDefault();
@@ -203,10 +206,42 @@ const Canvas = ({ settings, ...rest }) => {
       document.removeEventListener("pointerup", onPointerUp);
       document.removeEventListener("pointermove", onPointerMove);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, height]);
 
   const changeColor = (e) => {
     settings.current.color = e.target.value;
+  };
+
+  const exportCanvas = () => {
+    const link = document.createElement("a");
+    const content = JSON.stringify(history.current);
+    const file = new Blob([content], { type: "application/json" });
+    link.href = URL.createObjectURL(file);
+    link.download = `canvas_export_${Date.now()}_${Math.floor(
+      Math.random() * 3
+    )}.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  const importCanvas = (e) => {
+    if (e.target.files.length === 0) return;
+    const reader = new FileReader();
+    try {
+      reader.onload = () => {
+        history.current = JSON.parse(reader.result);
+        drawCanvas(getContext());
+        render();
+      };
+      reader.readAsText(e.target.files[0]);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const onImportClick = () => {
+    importInput.current?.click();
   };
 
   return (
@@ -233,19 +268,25 @@ const Canvas = ({ settings, ...rest }) => {
           ></div>
         </div>
         <button
+          type="button"
           onClick={moveCanvas}
           aria-pressed={settings.current.mode === MODES.PAN}
         >
-          <img src={move} alt="move" title="move" />
-        </button>
-        <button onClick={undoCanvas} disabled={history.current.length === 0}>
-          <img src={undo} alt="undo" title="undo" />
+          <img src={moveIcon} alt="move" title="move" />
         </button>
         <button
+          type="button"
+          onClick={undoCanvas}
+          disabled={history.current.length === 0}
+        >
+          <img src={undoIcon} alt="undo" title="undo" />
+        </button>
+        <button
+          type="button"
           onClick={redoCanvas}
           disabled={redoHistory.current.length === 0}
         >
-          <img src={redo} alt="redo" title="red" />
+          <img src={redoIcon} alt="redo" title="red" />
         </button>
         <button className="color">
           <input
@@ -254,6 +295,30 @@ const Canvas = ({ settings, ...rest }) => {
             defaultValue={settings.current.color}
             onChange={changeColor}
           />
+        </button>
+      </div>
+      <div
+        className="menu right"
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
+        aria-disabled={drawing}
+      >
+        <button
+          type="button"
+          onClick={exportCanvas}
+          disabled={history.current.length === 0}
+        >
+          <img src={exportIcon} alt="export" title="export" />
+        </button>
+        <input
+          ref={importInput}
+          className="hidden"
+          type="file"
+          accept="application/json"
+          onChange={importCanvas}
+        />
+        <button type="button" onClick={onImportClick}>
+          <img src={importIcon} alt="import" title="import" />
         </button>
       </div>
     </>

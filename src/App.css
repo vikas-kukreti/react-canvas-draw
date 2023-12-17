@@ -43,13 +43,18 @@ body {
   user-select: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 5px;
   padding: 10px;
   left: 10px;
   top: 10px;
   border-radius: 5px;
   background-color: rgba(231, 231, 231, 0.9);
   position: absolute;
+}
+
+.canvas-container .menu.right {
+  left: unset;
+  right: 10px;
 }
 
 .canvas-container .menu[aria-disabled="true"] {
@@ -109,4 +114,12 @@ body {
 
 .canvas-container .menu button:hover {
   background: rgba(0, 0, 0, 0.1);
+}
+
+.hidden {
+  position: absolute;
+  width: 0;
+  height: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
