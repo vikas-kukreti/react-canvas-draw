@@ -1,12 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import { MODES, PAN_LIMIT } from "./constants";
 
-import undoIcon from "./assets/undo.svg";
-import redoIcon from "./assets/redo.svg";
-import moveIcon from "./assets/move.svg";
-import exportIcon from "./assets/export.svg";
-import importIcon from "./assets/import.svg";
-
 let lastPath = [];
 
 const Canvas = ({ settings, ...rest }) => {
@@ -272,21 +266,21 @@ const Canvas = ({ settings, ...rest }) => {
           onClick={moveCanvas}
           aria-pressed={settings.current.mode === MODES.PAN}
         >
-          <img src={moveIcon} alt="move" title="move" />
+          <img src="assets/move.svg" alt="move" title="move" />
         </button>
         <button
           type="button"
           onClick={undoCanvas}
           disabled={history.current.length === 0}
         >
-          <img src={undoIcon} alt="undo" title="undo" />
+          <img src="assets/undo.svg" alt="undo" title="undo" />
         </button>
         <button
           type="button"
           onClick={redoCanvas}
           disabled={redoHistory.current.length === 0}
         >
-          <img src={redoIcon} alt="redo" title="red" />
+          <img src="assets/redo.svg" alt="redo" title="red" />
         </button>
         <button className="color">
           <input
@@ -308,7 +302,7 @@ const Canvas = ({ settings, ...rest }) => {
           onClick={exportCanvas}
           disabled={history.current.length === 0}
         >
-          <img src={exportIcon} alt="export" title="export" />
+          <img src="assets/export.svg" alt="export" title="export" />
         </button>
         <input
           ref={importInput}
@@ -318,7 +312,7 @@ const Canvas = ({ settings, ...rest }) => {
           onChange={importCanvas}
         />
         <button type="button" onClick={onImportClick}>
-          <img src={importIcon} alt="import" title="import" />
+          <img src="assets/import.svg" alt="import" title="import" />
         </button>
       </div>
     </>
