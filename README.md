@@ -1,1 +1,1 @@
-# Simple React based Shared Canvas Drawing Tool
+# Simple React based Canvas Drawing Tool
