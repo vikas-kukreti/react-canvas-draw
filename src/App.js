@@ -8,7 +8,7 @@ function App() {
   const settings = useRef({
     stroke: 3,
     color: "#000",
-    mode: MODES.LINE,
+    mode: MODES.PEN,
   });
 
   const size = useWindowSize();

@@ -33,7 +33,9 @@ const Canvas = ({ settings, ...rest }) => {
     }
     setDrawing(true);
     draw.current = true;
+    const point = getPoints(e, context.current);
     lastPath = [];
+    drawModes(settings.current.mode, context.current, point, lastPath);
   };
 
   const onPointerUp = (e) => {
@@ -44,12 +46,15 @@ const Canvas = ({ settings, ...rest }) => {
     }
     setDrawing(false);
     draw.current = false;
-    history.current.push({
-      ...settings.current,
-      path: lastPath,
-    });
-    redoHistory.current = [];
-    lastPath = [];
+    if (lastPath.length > 0) {
+      history.current.push({
+        ...settings.current,
+        path: lastPath,
+      });
+      redoHistory.current = [];
+      lastPath = [];
+      drawCanvas(getContext());
+    }
   };
 
   const getPreviewActiveStyles = () => {
@@ -92,16 +97,29 @@ const Canvas = ({ settings, ...rest }) => {
     if (moving.current) return onCanvasMove(e, context.current);
     if (!draw.current) return;
     const point = getPoints(e, context.current);
-    drawModes(settings.current.mode, point, context.current);
+    drawModes(settings.current.mode, context.current, point, lastPath);
   };
 
-  const drawModes = (mode, point, ctx) => {
+  const drawModes = (mode, ctx, point, path) => {
     switch (mode) {
-      case MODES.LINE:
-        drawLine(point, ctx);
+      case MODES.PEN:
+        point ? previewPen(point, ctx) : drawPen(path, ctx);
         break;
       case MODES.RECT:
-        drawRect(point, ctx);
+        if (point) {
+          path.length === 0 ? (path[0] = point) : (path[1] = point);
+          previewRect(path, ctx);
+        } else {
+          drawRect(path, ctx);
+        }
+        break;
+      case MODES.CIRCLE:
+        if (point) {
+          path.length === 0 ? (path[0] = point) : (path[1] = point);
+          previewCircle(path, ctx);
+        } else {
+          drawCircle(path, ctx);
+        }
         break;
       default:
         return;
@@ -117,6 +135,7 @@ const Canvas = ({ settings, ...rest }) => {
       ctx.strokeStyle = config.color;
       ctx.lineWidth = config.stroke;
       ctx.lineCap = "round";
+      ctx.lineJoin = "round";
     }
     return ctx;
   };
@@ -127,16 +146,57 @@ const Canvas = ({ settings, ...rest }) => {
     return [e.clientX - rect.x - dx, e.clientY - rect.y - dy];
   };
 
-  const drawRect = (e) => {};
+  const previewRect = (path, ctx) => {
+    if (path.length < 2) return;
+    drawCanvas(ctx);
+    drawRect(path, getContext(settings.current, ctx));
+  };
 
-  const drawLine = (point, ctx) => {
-    const [x, y] = point;
-    const [lx, ly] = lastPath[lastPath.length - 1] || [x, y];
+  const drawRect = (path, ctx) => {
     ctx.beginPath();
-    ctx.moveTo(lx, ly);
-    ctx.lineTo(x, y);
+    ctx.rect(
+      path[0][0],
+      path[0][1],
+      path[1][0] - path[0][0],
+      path[1][1] - path[0][1]
+    );
     ctx.stroke();
-    lastPath.push([x, y]);
+  };
+
+  const previewCircle = (path, ctx) => {
+    if (path.length < 2) return;
+    drawCanvas(ctx);
+    getContext(settings.current, ctx); // reset context
+    drawCircle(path, ctx);
+  };
+
+  const getDistance = ([[p1X, p1Y], [p2X, p2Y]]) => {
+    return Math.sqrt(Math.pow(p1X - p2X, 2) + Math.pow(p1Y - p2Y, 2));
+  };
+
+  const drawCircle = (path, ctx) => {
+    ctx.beginPath();
+    ctx.arc(path[0][0], path[0][1], getDistance(path), 0, 2 * Math.PI);
+    ctx.stroke();
+  };
+
+  const previewPen = (point, ctx) => {
+    if (lastPath.length === 0) {
+      ctx.beginPath();
+      ctx.moveTo(point[0], point[1]);
+    }
+    ctx.lineTo(point[0], point[1]);
+    ctx.stroke();
+    lastPath.push(point);
+  };
+
+  const drawPen = (points, ctx) => {
+    ctx.beginPath();
+    ctx.moveTo(points[0][0], points[0][1]);
+    for (const p of points) {
+      ctx.lineTo(p[0], p[1]);
+    }
+    ctx.stroke();
   };
 
   const clearCanvas = (ctx) => {
@@ -149,12 +209,8 @@ const Canvas = ({ settings, ...rest }) => {
   const drawCanvas = (ctx) => {
     clearCanvas(ctx);
     for (const item of history.current) {
-      lastPath = [];
       getContext(item, ctx);
-      for (const point of item.path) {
-        drawModes(item.mode, point, ctx);
-      }
-      lastPath = [];
+      drawModes(item.mode, ctx, null, item.path);
     }
   };
 
@@ -174,12 +230,8 @@ const Canvas = ({ settings, ...rest }) => {
     render();
   };
 
-  const moveCanvas = () => {
-    if (settings.current.mode === MODES.PAN) {
-      settings.current.mode = MODES.LINE;
-    } else {
-      settings.current.mode = MODES.PAN;
-    }
+  const setMode = (mode) => (e) => {
+    settings.current.mode = mode;
     render();
   };
 
@@ -238,6 +290,29 @@ const Canvas = ({ settings, ...rest }) => {
     importInput.current?.click();
   };
 
+  const modeButtons = [
+    {
+      mode: MODES.PAN,
+      title: "move",
+      icon: "move.svg",
+    },
+    {
+      mode: MODES.PEN,
+      title: "pen",
+      icon: "pen.svg",
+    },
+    {
+      mode: MODES.RECT,
+      title: "rectangle",
+      icon: "rectangle.svg",
+    },
+    {
+      mode: MODES.CIRCLE,
+      title: "circle",
+      icon: "circle.svg",
+    },
+  ];
+
   return (
     <>
       <canvas
@@ -245,7 +320,6 @@ const Canvas = ({ settings, ...rest }) => {
         width={width}
         height={height}
         onPointerDown={onPointerDown}
-        onPointerUp={onPointerUp}
         className={settings.current.mode === MODES.PAN ? "moving" : "drawing"}
       />
       <div
@@ -261,14 +335,30 @@ const Canvas = ({ settings, ...rest }) => {
             style={getPreviewActiveStyles()}
           ></div>
         </div>
-        <button
-          type="button"
-          onClick={moveCanvas}
-          aria-pressed={settings.current.mode === MODES.PAN}
-        >
-          <img src="assets/move.svg" alt="move" title="move" />
+        <hr />
+        <button className="button color" type="button">
+          <input
+            type="color"
+            title="change color"
+            defaultValue={settings.current.color}
+            onChange={changeColor}
+          />
         </button>
+        <hr />
+        {modeButtons.map((btn) => (
+          <button
+            className="button"
+            key={btn.mode}
+            type="button"
+            onClick={setMode(btn.mode)}
+            aria-pressed={settings.current.mode === btn.mode}
+          >
+            <img src={"assets/" + btn.icon} alt={btn.title} title={btn.title} />
+          </button>
+        ))}
+        <hr />
         <button
+          className="button"
           type="button"
           onClick={undoCanvas}
           disabled={history.current.length === 0}
@@ -276,19 +366,12 @@ const Canvas = ({ settings, ...rest }) => {
           <img src="assets/undo.svg" alt="undo" title="undo" />
         </button>
         <button
+          className="button"
           type="button"
           onClick={redoCanvas}
           disabled={redoHistory.current.length === 0}
         >
           <img src="assets/redo.svg" alt="redo" title="red" />
-        </button>
-        <button className="color">
-          <input
-            type="color"
-            title="change color"
-            defaultValue={settings.current.color}
-            onChange={changeColor}
-          />
         </button>
       </div>
       <div
@@ -298,6 +381,7 @@ const Canvas = ({ settings, ...rest }) => {
         aria-disabled={drawing}
       >
         <button
+          className="button"
           type="button"
           onClick={exportCanvas}
           disabled={history.current.length === 0}
@@ -311,7 +395,7 @@ const Canvas = ({ settings, ...rest }) => {
           accept="application/json"
           onChange={importCanvas}
         />
-        <button type="button" onClick={onImportClick}>
+        <button className="button" type="button" onClick={onImportClick}>
           <img src="assets/import.svg" alt="import" title="import" />
         </button>
       </div>
